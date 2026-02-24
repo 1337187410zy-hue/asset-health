@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>资产配置健康度诊断</title>
+    <script src="https://unpkg.com/@mcp-b/global@latest/dist/global.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #444;
+            font-weight: 500;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #eee;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+        
+        .result {
+            margin-top: 30px;
+            padding: 25px;
+            background: #f8f9ff;
+            border-radius: 15px;
+            display: none;
+        }
+        
+        .result.show {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .score {
+            font-size: 48px;
+            font-weight: bold;
+            text-align: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .score-label {
+            text-align: center;
+            color: #666;
+            margin-bottom: 15px;
+ .advice {
+            color        }
+        
+       : #555;
+            line-height: 1.8;
+            margin-bottom: 20px;
+        }
+        
+        .booking-btn {
+            display: block;
+            text-align: center;
+            padding: 14px;
+            background: #10b981;
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+        
+        .booking-btn:hover {
+            background: #059669;
+        }
+        
+        .history {
+            margin-top: 30px;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+        
+        .history h3 {
+            color: #444;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        
+        .history-item {
+            padding: 12px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .clear-btn {
+            background: #ef4444;
+            margin-top: 10px;
+        }
+        
+        .clear-btn:hover {
+            background: #dc2626;
+            box-shadow: 0 10px 30px rgba(239, 68, 68, 0.4);
+        }
+        
+        .mcp-status {
+            text-align: center;
+            padding: 10px;
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+        
+        .mcp-status.ready {
+            color: #10b981;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1>💰 资产配置健康度诊断</h1>
+            <p class="subtitle">输入您的财务信息，AI帮您分析资产配置</p>
+            
+            <div class="mcp-status" id="mcpStatus">正在初始化WebMCP...</div>
+            
+            <form id="assetForm">
+                <div class="form-group">
+                    <label>年龄</label>
+                    <input type="number" id="age" min="18" max="80" placeholder="请输入您的年龄" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>年收入（万元）</label>
+                    <input type="number" id="income" min="0" placeholder="请输入您的年收入" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>当前存款（万元）</label>
+                    <input type="number" id="savings" min="0" placeholder="请输入您的存款金额" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>风险承受能力</label>
+                    <select id="riskTolerance" required>
+                        <option value="">请选择</option>
+                        <option value="1">保守型 - 不能承受任何亏损</option>
+                        <option value="2">稳健型 - 能承受5%以内的亏损</option>
+                        <option value="3">平衡型 - 能承受10%-20%的亏损</option>
+                        <option value="4">进取型 - 能承受20%以上的亏损</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="btn">开始诊断</button>
+            </form>
+            
+            <div class="result" id="result">
+                <div class="score-label">健康度评分</div>
+                <div class="score" id="score">0</div>
+                <div class="advice" id="advice"></div>
+                <a href="https://cal.com/your-name/30min" target="_blank" class="booking-btn" id="bookingLink">
+                    📅 预约专业理财顾问
+                </a>
+            </div>
+            
+            <div class="history" id="historySection" style="display: none;">
+                <h3>📋 历史记录</h3>
+                <div id="historyList"></div>
+                <button class="btn clear-btn" onclick="clearHistory()">清空记录</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // WebMCP 工具注册
+        async function registerAssetTool() {
+            if (typeof window.useWebMCP === 'function') {
+                try {
+                    await window.useWebMCP("calculate_asset_allocation_health", {
+                        description: "根据用户年龄、收入、存款和风险承受能力，计算资产配置健康度并给出建议",
+                        schema: {
+                            age: { type: "number", description: "用户年龄" },
+                            income: { type: "number", description: "年收入（万元）" },
+                            savings: { type: "number", description: "存款金额（万元）" },
+                            risk_tolerance: { type: "number", description: "风险承受能力1-4" }
+                        },
+                        handler: async (params) => {
+                            return calculateAssetHealth(params);
+                        }
+                    });
+                    document.getElementById('mcpStatus').textContent = '✓ WebMCP 已就绪';
+                    document.getElementById('mcpStatus').classList.add('ready');
+                } catch (e) {
+                    console.error('WebMCP注册失败:', e);
+                    document.getElementById('mcpStatus').textContent = '○ WebMCP未加载（本地模式）';
+                }
+            } else {
+                document.getElementById('mcpStatus').textContent = '○ WebMCP未加载（本地模式）';
+            }
+        }
+        
+        // 资产配置健康度计算核心逻辑
+        function calculateAssetHealth(params) {
+            const { age, income, savings, risk_tolerance } = params;
+            
+            // 基础分数
+            let score = 50;
+            
+            // 储蓄率分析 (收入存款比)
+            const savingsRate = savings / income;
+            if (savingsRate >= 1) {
+                score += 20; // 储蓄充足
+            } else if (savingsRate >= 0.5) {
+                score += 10;
+            } else if (savingsRate >= 0.2) {
+                score += 5;
+            } else {
+                score -= 10; // 储蓄不足
+            }
+            
+            // 年龄与风险匹配分析
+            const idealRisk = getIdealRiskTolerance(age);
+            if (risk_tolerance === idealRisk) {
+                score += 15;
+            } else if (Math.abs(risk_tolerance - idealRisk) === 1) {
+                score += 5;
+            } else {
+                score -= 10;
+            }
+            
+            // 应急储备分析 (建议3-6个月支出)
+            const monthlyExpenses = income * 0.7; // 假设70%用于支出
+            const emergencyFund = savings / monthlyExpenses;
+            if (emergencyFund >= 6) {
+                score += 15;
+            } else if (emergencyFund >= 3) {
+                score += 10;
+            } else if (emergencyFund >= 1) {
+                score += 5;
+            } else {
+                score -= 15;
+            }
+            
+            // 限制分数范围
+            score = Math.max(0, Math.min(100, score));
+            
+            // 生成建议
+            const advice = generateAdvice(score, params);
+            
+            return {
+                score: score,
+                advice: advice,
+                factors: {
+                    savingsRate: savingsRate.toFixed(2),
+                    emergencyFundMonths: emergencyFund.toFixed(1),
+                    riskMatch: risk_tolerance === idealRisk
+                }
+            };
+        }
+        
+        function getIdealRiskTolerance(age) {
+            if (age < 30) return 4;
+            if (age < 40) return 3;
+            if (age < 50) return 2;
+            return 1;
+        }
+        
+        function generateAdvice(score, params) {
+            const { age, income, savings, risk_tolerance } = params;
+            let advice = '';
+            
+            if (score >= 80) {
+                advice = '🎉 您的资产配置非常健康！';
+            } else if (score >= 60) {
+                advice = '✅ 您的资产配置整体良好，但还有优化空间。';
+            } else if (score >= 40) {
+                advice = '⚠️ 您的资产配置需要关注，建议调整。';
+            } else {
+                advice = '🚨 您的资产配置存在风险，请尽快咨询专业人士。';
+            }
+            
+            // 具体建议
+            const savingsRate = savings / income;
+            if (savingsRate < 0.2) {
+                advice += '\n\n• 您的储蓄率偏低，建议增加储蓄，至少达到收入的20%。';
+            }
+            
+            if (savings / (income * 0.7) < 3) {
+                advice += '\n• 应急储备不足，建议预留3-6个月的支出作为应急资金。';
+            }
+            
+            const idealRisk = getIdealRiskTolerance(age);
+            if (risk_tolerance < idealRisk) {
+                advice += '\n• 您的风险承受能力与年龄不符，可以适当增加风险资产配置。';
+            } else if (risk_tolerance > idealRisk && age > 45) {
+                advice += '\n• 年龄较大建议降低风险偏好，保护已有资产。';
+            }
+            
+            if (risk_tolerance >= 3) {
+                advice += '\n• 您可以适当配置股票型基金或指数基金，追求长期收益。';
+            } else {
+                advice += '\n• 建议以债券、银行理财等固定收益类资产为主。';
+            }
+            
+            return advice;
+        }
+        
+        // 表单提交处理
+        document.getElementById('assetForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const params = {
+                age: parseInt(document.getElementById('age').value),
+                income: parseFloat(document.getElementById('income').value),
+                savings: parseFloat(document.getElementById('savings').value),
+                risk_tolerance: parseInt(document.getElementById('riskTolerance').value)
+            };
+            
+            // 计算健康度
+            const result = calculateAssetHealth(params);
+            
+            // 显示结果
+            document.getElementById('score').textContent = result.score;
+            document.getElementById('advice').textContent = result.advice;
+            document.getElementById('result').classList.add('show');
+            
+            // 保存到本地存储
+            saveRecord(params, result);
+            
+            // 尝试通过WebMCP调用AI（如果可用）
+            if (typeof window.useWebMCP === 'function') {
+                console.log('资产配置工具已注册，AI可以通过WebMCP调用');
+            }
+        });
+        
+        // 本地存储相关
+        function saveRecord(params, result) {
+            const records = JSON.parse(localStorage.getItem('assetRecords') || '[]');
+            records.unshift({
+                date: new Date().toLocaleString(),
+                params: params,
+                result: result
+            });
+            // 只保留最近10条
+            if (records.length > 10) records.pop();
+            localStorage.setItem('assetRecords', JSON.stringify(records));
+            loadHistory();
+        }
+        
+        function loadHistory() {
+            const records = JSON.parse(localStorage.getItem('assetRecords') || '[]');
+            const historySection = document.getElementById('historySection');
+            const historyList = document.getElementById('historyList');
+            
+            if (records.length === 0) {
+                historySection.style.display = 'none';
+                return;
+            }
+            
+            historySection.style.display = 'block';
+            historyList.innerHTML = records.map(r => `
+                <div class="history-item">
+                    <strong>${r.date}</strong><br>
+                    年龄: ${r.params.age}, 收入: ${r.params.income}万, 存款: ${r.params.savings}万<br>
+                    评分: <strong>${r.result.score}</strong>分
+                </div>
+            `).join('');
+        }
+        
+        function clearHistory() {
+            localStorage.removeItem('assetRecords');
+            loadHistory();
+        }
+        
+        // 初始化
+        window.addEventListener('load', function() {
+            registerAssetTool();
+            loadHistory();
+        });
+    </script>
+</body>
+</html>
