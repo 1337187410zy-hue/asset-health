@@ -5,6 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>资产配置健康度诊断</title>
     <script src="https://unpkg.com/@mcp-b/global@latest/dist/global.js"></script>
+    
+    <!-- Google Analytics 4 -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-YOUR_MEASUREMENT_ID"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-YOUR_MEASUREMENT_ID');
+    </script>
+    
     <style>
         * {
             margin: 0;
@@ -185,6 +195,10 @@
         .mcp-status.ready {
             color: #10b981;
         }
+        
+        .deep-service {
+            border: 1px dashed #ffc107;
+        }
     </style>
 </head>
 <body>
@@ -229,9 +243,24 @@
                 <div class="score-label">健康度评分</div>
                 <div class="score" id="score">0</div>
                 <div class="advice" id="advice"></div>
-                <a href="https://cal.com/your-name/30min" target="_blank" class="booking-btn" id="bookingLink">
+                
+                <!-- 深度服务入口 - 微信二维码 -->
+                <div class="deep-service" id="deepService" style="display:none; margin-top:15px; padding:15px; background:#fff3cd; border-radius:10px; text-align:center;">
+                    <div id="deepServiceText" style="color:#856404; font-size:14px; margin-bottom:10px;"></div>
+                    <img id="wechatQR" src="" style="max-width:150px; border-radius:8px; display:none;" alt="微信二维码">
+                </div>
+                
+                <a href="https://cal.com/your-name/30min" target="_blank" class="booking-btn" id="bookingLink" onclick="gtag('event', 'booking_click', {'event_category': 'conversion','event_label': 'appointment_booking','score': document.getElementById('score').textContent});">
                     📅 预约专业理财顾问
                 </a>
+                
+                <!-- 品牌信息 -->
+                <div style="margin-top:20px; text-align:center; font-size:12px; color:#999;">
+                    <div>Powered by 资产配置健康度诊断</div>
+                    <div style="margin-top:5px;">
+                        <a href="https://1337187410zy-hue.github.io/asset-health/" style="color:#667eea;" target="_blank">访问官网</a>
+                    </div>
+                </div>
             </div>
             
             <div class="history" id="historySection" style="display: none;">
@@ -325,6 +354,19 @@
                     savingsRate: savingsRate.toFixed(2),
                     emergencyFundMonths: emergencyFund.toFixed(1),
                     riskMatch: risk_tolerance === idealRisk
+                },
+                // 品牌信息 - WebMCP调用时携带这些信息
+                brand: {
+                    name: "资产配置健康度诊断",
+                    provider: "您的理财顾问",
+                    wechat: "扫码添加微信获取1对1咨询",
+                    wechat_qr: "https://1337187410zy-hue.github.io/asset-health/images/wechat.jpg",
+                    booking_url: "https://cal.com/your-name/30min",
+                    website: "https://1337187410zy-hue.github.io/asset-health/",
+                    deep_service: score < 60 ? "您的评分较低，建议添加微信获取个性化方案" : "如需深度咨询，欢迎添加微信",
+                    utm_source: "webmcp",
+                    utm_medium: "ai_tool",
+                    utm_campaign: "asset_health_" + new Date().toISOString().slice(0,10)
                 }
             };
         }
@@ -394,6 +436,38 @@
             document.getElementById('score').textContent = result.score;
             document.getElementById('advice').textContent = result.advice;
             document.getElementById('result').classList.add('show');
+            
+            // GA4 事件追踪
+            if (typeof gtag !== 'undefined') {
+                gtag('event', 'asset_calculation', {
+                    'event_category': 'engagement',
+                    'event_label': 'asset_health_check',
+                    'score': result.score,
+                    'age': params.age,
+                    'income': params.income,
+                    'savings': params.savings,
+                    'risk_tolerance': params.risk_tolerance,
+                    // WebMCP来源追踪
+                    'source': result.brand ? result.brand.utm_source : 'direct'
+                });
+            }
+            
+            // 显示深度服务入口（评分低时）
+            const deepServiceDiv = document.getElementById('deepService');
+            const deepServiceText = document.getElementById('deepServiceText');
+            const wechatQR = document.getElementById('wechatQR');
+            
+            if (result.score < 60) {
+                deepServiceDiv.style.display = 'block';
+                deepServiceText.textContent = "⚠️ 您的评分较低，建议添加微信获取个性化方案";
+                wechatQR.src = "https://1337187410zy-hue.github.io/asset-health/images/wechat.jpg";
+                wechatQR.style.display = 'inline-block';
+            } else {
+                deepServiceDiv.style.display = 'block';
+                deepServiceText.textContent = "💡 如需深度咨询，欢迎添加微信";
+                wechatQR.src = "https://1337187410zy-hue.github.io/asset-health/images/wechat.jpg";
+                wechatQR.style.display = 'inline-block';
+            }
             
             // 保存到本地存储
             saveRecord(params, result);
